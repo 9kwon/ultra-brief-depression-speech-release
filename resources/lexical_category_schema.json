@@ -1,0 +1,53 @@
+{
+  "description": "Public lexical category schema used for manuscript-level feature construction. The full curated Korean lexicon is not included in this public release.",
+  "main_model_features": [
+    "lex_pos_affect",
+    "lex_neg_dep",
+    "lex_neg_stress",
+    "lex_wellness",
+    "lex_daily_burden",
+    "lex_self_focus",
+    "domain_entropy",
+    "global_sub_entropy",
+    "lag1_word_jaccard_mean"
+  ],
+  "category_mapping": {
+    "lex_pos_affect": [
+      "pos_high",
+      "pos_calm"
+    ],
+    "lex_neg_dep": [
+      "neg_flat"
+    ],
+    "lex_neg_stress": [
+      "neg_tense",
+      "conflict"
+    ],
+    "lex_wellness": [
+      "exercise",
+      "rest",
+      "leisure",
+      "mindfulness_religion"
+    ],
+    "lex_daily_burden": [
+      "chores",
+      "admin",
+      "economy"
+    ],
+    "lex_self_focus": [
+      "reflection",
+      "improvement"
+    ]
+  },
+  "derived_features": {
+    "domain_entropy": "Mean daily Shannon entropy over lexical main domains.",
+    "global_sub_entropy": "Shannon entropy over pooled sub-domain counts across the aligned observation window.",
+    "lag1_word_jaccard_mean": "Mean adjacent-day Jaccard overlap of unique word sets."
+  },
+  "not_included_publicly": [
+    "Full curated Korean lexicon",
+    "Occupation-specific term list",
+    "Misspelling normalization dictionary",
+    "Iterative lexicon expansion artifacts"
+  ]
+}

@@ -1,0 +1,5 @@
+# Candidate acoustic feature extraction
+python src/acoustic_feature_extraction.py   --target-folder /path/to/sound   --save-diary-csv outputs/diary_features.csv   --save-start-csv outputs/start_recording_features.csv
+
+# Main manuscript analyses
+python src/main_analysis.py   --diary-csv outputs/diary_features.csv   --vocab-csv /path/to/embedded_words.csv   --survey-csv /path/to/total_basic_survey_final.csv   --out-dir results/main_release
