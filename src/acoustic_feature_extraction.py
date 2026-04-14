@@ -28,7 +28,6 @@ EPS = 1e-9
 
 
 def parse_filename(filename: str):
-    """Parse filenames like: prt1001_d11_2_아기축구자전거.wav."""
     base = os.path.basename(filename)
     m = re.match(r'^(prt\d+)_d(\d+)_([0-9]+)_(.+)\.wav$', base)
     if not m:
