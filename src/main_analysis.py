@@ -691,7 +691,7 @@ def build_models(seed=42) -> Tuple[Dict[str, Pipeline], Dict[str, Pipeline]]:
             ("imp", SimpleImputer(strategy="median")),
             ("m", RandomForestRegressor(n_estimators=400, max_depth=6, random_state=seed)),
         ]),
-        # [변경] GridSearchCV 제거
+        # GridSearchCV 제거
         "SVM(rbf)": Pipeline([
             ("imp", SimpleImputer(strategy="median")),
             ("sc", StandardScaler()),
@@ -945,10 +945,6 @@ def aggregate_participants(df_main, acoustic_cols, lexical_cols, cfg,
 # Feature sets — 자동 추출
 # =============================================================================
 def build_feature_sets(acoustic_cols, lexical_cols, cfg, stable_features=None):
-    """
-    stable_features가 None이면 3개 set (Acoustic, Lexical, Combined_main)만 반환.
-    stable_features가 리스트면 Combined_stable도 추가.
-    """
     acoustic_std = [f"std_{col}" for col in acoustic_cols]
     feature_sets = {
         "Acoustic_mean+std": acoustic_cols + acoustic_std,
@@ -1063,15 +1059,6 @@ def compute_pairwise_jaccard(matrix):
 
 def extract_stable_features(df_prt, combined_features, clf_pipeline, cfg,
                             min_rate=None):
-    """
-    [Method 3] Combined_main에서 ElasticNet을 반복 학습하여 stable feature를 자동 추출.
-
-    selection_rate >= min_rate 인 feature만 선택.
-    - target_k 없음 (개수를 강제하지 않음)
-    - |coef| 랭킹으로 자르지 않음
-    - 순수하게 "몇 % fold에서 선택되었는가"만으로 결정
-    - 결과 feature 수는 데이터에 의해 결정됨
-    """
     df_hd = df_prt[df_prt["group"].isin(["healthy", "depression"])].reset_index(drop=True)
     features = filter_existing_features(df_hd, combined_features)
     X = df_hd[features].to_numpy()
@@ -1222,7 +1209,7 @@ def resolve_global_threshold(oof_prob, X, y, clf, cfg, thr_list, policy="median_
     raise ValueError(f"Unknown policy: {policy}")
 
 # =============================================================================
-# Metrics & evaluation (unchanged)
+# Metrics & evaluation 
 # =============================================================================
 def compute_classification_metrics(y, prob, pred):
     auroc = safe_auc(y, prob)
@@ -1897,7 +1884,6 @@ def plot_feature_sets_for_model(df_summary, model_name, feature_sets, title,
     hi = sub["AUROC_hi"].to_numpy(dtype=float)
     yerr = np.vstack([y - lo, hi - y])
 
-    # 세로 길이는 약간 줄임
     fig, ax = plt.subplots(figsize=(max(7.2, 1.10 * len(sub)), 5.4))
     bars = ax.bar(x, y, width=0.7, yerr=yerr, capsize=6, edgecolor="black", linewidth=1.0)
 
@@ -1912,7 +1898,6 @@ def plot_feature_sets_for_model(df_summary, model_name, feature_sets, title,
         if style["hatch"] is not None:
             bar.set_hatch(style["hatch"])
 
-    # 핵심: AUROC 구간만 확대해서 보여주기
     y_min, y_max = apply_zoomed_auroc_axis(
         ax, lo, hi,
         tick_step=0.05,   # tick 간격 조금 넓게
@@ -1970,24 +1955,7 @@ def plot_feature_sets_for_model(df_summary, model_name, feature_sets, title,
     ax.set_xticks(x)
     ax.set_xticklabels(labels, ha="center", fontsize=11)
     ax.set_ylabel("AUROC", fontsize=12)
-    ax.tick_params(axis="y", labelsize=11)
-
-    # --- post hoc 구분 표시 추가 ---
-    posthoc_feature_sets = set(map(str, posthoc_feature_sets or []))
-    posthoc_mask = sub["FeatureSet"].astype(str).isin(posthoc_feature_sets)
-    if posthoc_mask.any():
-        first_posthoc_idx = np.where(posthoc_mask)[0][0]
-        if first_posthoc_idx > 0:
-            ax.axvline(first_posthoc_idx - 0.5, color="gray",
-                       linestyle=(0, (3, 3)), linewidth=1.2, alpha=0.9, zorder=0)
-        # ax.axvspan(first_posthoc_idx - 0.5, len(sub) - 0.5,
-        #            color="gray", alpha=0.06, zorder=0)
-        ax.text((first_posthoc_idx + len(sub) - 1) / 2,
-                y_max + 0.005 * (y_max - y_min),
-                "Post hoc",
-                ha="center", va="bottom", fontsize=11,
-                color="#555555", fontweight="bold", clip_on=False)
-    
+    ax.tick_params(axis="y", labelsize=11)   
     ax.grid(axis="y", alpha=0.2)
 
     fig.tight_layout()
@@ -2077,10 +2045,10 @@ def plot_cumulative_curve(df_cum, title=None, save_path=None, dpi=DPI, plateau_d
         plateau_day = days[idx0]
         plateau_auc = auroc[idx0]
         if plateau_day >= float(days[-1]) - 1:
-            text_dx = -0.35
+            text_dx = -0.40
             text_ha = "right"
         elif plateau_day >= float(days[-1]) - 2:
-            text_dx = -0.45
+            text_dx = -0.50
             text_ha = "left"
         else:
             text_dx = 0.9
@@ -2098,7 +2066,7 @@ def plot_cumulative_curve(df_cum, title=None, save_path=None, dpi=DPI, plateau_d
             f"Plateau ≈ day {int(plateau_day)}",
             xy=(plateau_day, plateau_auc),
             xytext=(plateau_day + text_dx, plateau_auc - 0.055),
-            fontsize=13,
+            fontsize=14.5,
             color=text_color,
             ha=text_ha,
             arrowprops=dict(
@@ -2108,8 +2076,8 @@ def plot_cumulative_curve(df_cum, title=None, save_path=None, dpi=DPI, plateau_d
             ),
         )
 
-    ax.set_xlabel("Cumulative days", fontsize=14)
-    ax.set_ylabel("AUROC", fontsize=13.5)
+    ax.set_xlabel("Cumulative days", fontsize=15)
+    ax.set_ylabel("AUROC", fontsize=14)
     ax.tick_params(axis="both", labelsize=13)
     ax.set_xlim(0.5, float(days[-1]) + 0.5)
     ax.set_ylim(0.35, 1.0)
@@ -2213,9 +2181,9 @@ def plot_sliding_window(df_slide, title, save_path=None, dpi=DPI):
         )
 
     ax.axhline(0.5, linestyle="--", linewidth=1, alpha=0.7, color="gray")
-    ax.set_xlabel("Window Midpoint (Day)", fontsize=13)
-    ax.set_ylabel("AUROC", fontsize=13)
-    ax.tick_params(axis="both", labelsize=12)
+    ax.set_xlabel("Window Midpoint (Day)", fontsize=15)
+    ax.set_ylabel("AUROC", fontsize=14)
+    ax.tick_params(axis="both", labelsize=13)
     ax.set_xlim(0.5, 15.5)
     ax.set_ylim(0.35, 1.0)
     ax.grid(alpha=0.25)
@@ -2379,7 +2347,7 @@ def plot_cumulative_dual(
                     f"{lbl}\n{auroc_c[i]:.3f}",
                     xy=(d_ms, auroc_c[i]),
                     xytext=(d_ms + dx, auroc_c[i] + dy),
-                    fontsize=13,
+                    fontsize=15,
                     fontweight="bold",
                     color=COMPARISON_COLORS["Combined_main"],
                     arrowprops=dict(
@@ -2391,8 +2359,8 @@ def plot_cumulative_dual(
                 )
 
     ax.axhline(0.5, linestyle="--", linewidth=1, alpha=0.5, color="#999999")
-    ax.set_xlabel("Cumulative Days", fontsize=14)
-    ax.set_ylabel("AUROC", fontsize=13.5)
+    ax.set_xlabel("Cumulative Days", fontsize=15)
+    ax.set_ylabel("AUROC", fontsize=14)
     ax.tick_params(axis="both", labelsize=13)
     #ax.set_title(title, fontweight="bold", fontsize=13)
     ax.set_xlim(0.5, 15.5)
@@ -2488,7 +2456,7 @@ def run_main_pipeline(paths, out_dir, cfg, model_whitelist=None):
         df_prt_full, feature_sets_base["Combined_main"], clf_models["ElasticNet"], cfg,
     )
 
-    # [추가] demographic baseline 미리 계산
+    # demographic baseline 
     demo_baseline = evaluate_demographic_baseline(
         df_prt_full,
         outer_splits=cfg.outer_splits,
@@ -2719,7 +2687,7 @@ def run_main_pipeline(paths, out_dir, cfg, model_whitelist=None):
     return df_summary, store, pack
 
 # =============================================================================
-# Temporal analysis — Stable features + Combined_main 두 가지 모두 수행
+# Temporal analysis 
 # =============================================================================
 def _run_temporal_one_featureset(df_main, acoustic_cols, lexical_cols, cfg, clf,
                                  features, fs_label, out_dir, max_day, min_days_per_prt,
@@ -2810,12 +2778,6 @@ def run_temporal_analysis(df_main, acoustic_cols, lexical_cols, cfg, clf_models,
         model_name="ElasticNet",
     )
 
-    plot_sliding_window(
-        res_stable["sliding"],
-        title=f"Sliding Windows | {stable_label} | ElasticNet",
-        save_path=out_dir / f"Temporal_Sliding_Reduced_{ts}.png", dpi=cfg.dpi,
-    )
-
     # B) Combined_main temporal
     res_combined = _run_temporal_one_featureset(
         df_main, acoustic_cols, lexical_cols, cfg, clf,
@@ -2889,43 +2851,20 @@ def evaluate_demographic_baseline(df_prt, outer_splits=3, outer_repeats=20, seed
 
 
 # =============================================================================
-# Run all (public release: manuscript main analyses only)
+# Run all 
 # =============================================================================
-
-
-def parse_args():
-    parser = argparse.ArgumentParser(
-        description="Public release: manuscript main analyses only."
-    )
-    parser.add_argument("--diary-csv", required=True, help="Path to diary_features.csv")
-    parser.add_argument("--vocab-csv", required=True, help="Path to lexical/day-level CSV")
-    parser.add_argument("--survey-csv", required=True, help="Path to survey CSV")
-    parser.add_argument("--out-dir", required=True, help="Directory for outputs")
-    parser.add_argument("--seed", type=int, default=SEED, help="Random seed")
-    parser.add_argument(
-        "--skip-temporal",
-        action="store_true",
-        help="Run only the main manuscript evaluation without temporal analysis.",
-    )
-    return parser.parse_args()
-
-
-def run_all(diary_csv: str, vocab_csv: str, survey_csv: str, out_dir: str,
-            seed: int = SEED, run_temporal: bool = True):
-    out_dir = Path(out_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
-
-    print("SEED:", seed)
+def run_all():
+    print("SEED:", SEED)
     print("OUTER:", OUTER_REPEATS, "x", OUTER_SPLITS)
     print("MODEL_WHITELIST:", MODEL_WHITELIST)
     print("[PUBLIC RELEASE] Running manuscript main analyses only: main evaluation + temporal analysis.")
 
-    paths = Paths(diary_csv=diary_csv, vocab_csv=vocab_csv, survey_csv=survey_csv)
+    paths = Paths(diary_csv=DIARY_CSV, vocab_csv=VOCAB_CSV, survey_csv=SURVEY_CSV)
     cfg = EvalConfig(
         phq_healthy_max_exclusive=4, phq_depress_min_exclusive=10,
         outer_splits=OUTER_SPLITS, outer_repeats=OUTER_REPEATS,
         inner_splits_thr=INNER_SPLITS_THR, threshold_mode=THR_MODE,
-        sens_target=SENS_TARGET, seed=seed, dpi=DPI,
+        sens_target=SENS_TARGET, seed=SEED, dpi=DPI,
         day_agg=DAY_AGG, prt_agg=PRT_AGG,
         add_acoustic_std=ADD_ACOUSTIC_STD, add_lexical_std=ADD_LEXICAL_STD,
         nested_stable_eval=NESTED_STABLE_EVAL,
@@ -2939,14 +2878,16 @@ def run_all(diary_csv: str, vocab_csv: str, survey_csv: str, out_dir: str,
         grid_search_n_jobs=GRID_SEARCH_N_JOBS,
     )
 
-    df_summary, store, pack = run_main_pipeline(paths, out_dir, cfg, model_whitelist=MODEL_WHITELIST)
+    # 1. Main manuscript pipeline
+    df_summary, store, pack = run_main_pipeline(paths, OUT_DIR, cfg, model_whitelist=MODEL_WHITELIST)
 
+    # 2. Temporal analysis
     temporal = None
-    if run_temporal and pack.get("best_info"):
+    if RUN_TEMPORAL and pack.get("best_info"):
         temporal = run_temporal_analysis(
             pack["df_main"], pack["acoustic_cols"], pack["lexical_cols"],
             cfg, pack["clf_models"], pack["stable_features"],
-            out_dir, max_day=MAX_TEMP_DAY, min_days_per_prt=TEMP_MIN_DAYS_PER_PRT,
+            OUT_DIR, max_day=MAX_TEMP_DAY, min_days_per_prt=TEMP_MIN_DAYS_PER_PRT,
             window_sizes=TEMP_WINDOW_SIZES, early_split_day=TEMP_EARLY_SPLIT_DAY,
             stable_nfeat_min=pack.get("stable_nfeat_min"),
             stable_nfeat_max=pack.get("stable_nfeat_max"),
@@ -2955,13 +2896,8 @@ def run_all(diary_csv: str, vocab_csv: str, survey_csv: str, out_dir: str,
     return df_summary, store, pack, cfg, temporal
 
 
+# =============================================================================
+# Entry point
+# =============================================================================
 if __name__ == "__main__":
-    args = parse_args()
-    run_all(
-        diary_csv=args.diary_csv,
-        vocab_csv=args.vocab_csv,
-        survey_csv=args.survey_csv,
-        out_dir=args.out_dir,
-        seed=args.seed,
-        run_temporal=not args.skip_temporal,
-    )
+    run_all()
