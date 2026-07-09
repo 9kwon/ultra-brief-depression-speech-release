@@ -73,32 +73,6 @@ The public schema exposes the category structure for the nine lexical features u
 - `global_sub_entropy`
 - `lag1_word_jaccard_mean`
 
-## Installation
-
-```bash
-pip install -r requirements.txt
-```
-
-## Example usage
-
-### 1. Extract candidate acoustic features
-
-```bash
-python src/acoustic_feature_extraction.py   --target-folder /path/to/sound   --save-diary-csv outputs/diary_features.csv   --save-start-csv outputs/start_recording_features.csv
-```
-
-### 2. Run the manuscript main analyses
-
-```bash
-python src/main_analysis.py   --diary-csv outputs/diary_features.csv   --vocab-csv /path/to/embedded_words.csv   --survey-csv /path/to/total_basic_survey_final.csv   --out-dir results/main_release
-```
-
-Optional:
-
-```bash
-python src/main_analysis.py   --diary-csv outputs/diary_features.csv   --vocab-csv /path/to/embedded_words.csv   --survey-csv /path/to/total_basic_survey_final.csv   --out-dir results/main_release   --skip-temporal
-```
-
 ## Scope of the public release
 
 The default execution path in `src/main_analysis.py` is intentionally limited to the manuscript core analyses.
